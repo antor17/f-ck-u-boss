@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="bn" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boss Stress Relief Arena 3000</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Hind+Siliguri:wght@500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'Hind Siliguri', 'sans-serif'],
+          },
+          colors: {
+            cyber: {
+              bg: '#0a0a12',
+              card: '#121225',
+              accent: '#ff0055',
+              neon: '#00f0ff',
+              gold: '#ffd700'
+            }
+          },
+          animation: {
+            'pulse-fast': 'pulse 0.6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'spin-slow': 'spin 8s linear infinite',
+            'bounce-short': 'bounceShort 0.3s ease-in-out',
+          },
+          keyframes: {
+            bounceShort: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Theme Definitions */
+    body.theme-cyberpunk {
+      background: radial-gradient(circle at center, #1a0b2e 0%, #080312 100%);
+      --accent-color: #ff0055;
+      --glow-color: rgba(255, 0, 85, 0.5);
+    }
+    body.theme-arcade {
+      background: radial-gradient(circle at center, #0f2b1d 0%, #040e09 100%);
+      --accent-color: #00ff66;
+      --glow-color: rgba(0, 255, 102, 0.5);
+    }
+    body.theme-mayhem {
+      background: radial-gradient(circle at center, #3b0d0d 0%, #120303 100%);
+      --accent-color: #ff4500;
+      --glow-color: rgba(255, 69, 0, 0.5);
+    }
+    body.theme-sunset {
+      background: radial-gradient(circle at center, #2b0e3a 0%, #0d0414 100%);
+      --accent-color: #ffaa00;
+      --glow-color: rgba(255, 170, 0, 0.5);
+    }
+
+    /* Screen Shake Animation */
+    .screen-shake {
+      animation: shake 0.25s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0) rotate(-1deg); }
+      20%, 80% { transform: translate3d(4px, 0, 0) rotate(2deg); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0) rotate(-2deg); }
+      40%, 60% { transform: translate3d(6px, 0, 0) rotate(1deg); }
+    }
+
+    /* Boss Avatar Hit Animations */
+    .hit-recoil {
+      animation: recoil 0.35s ease-out;
+    }
+    @keyframes recoil {
+      0% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+      30% { transform: scale(0.82) rotate(-12deg) translateY(-15px); filter: brightness(2) drop-shadow(0 0 25px var(--accent-color)); }
+      60% { transform: scale(1.1) rotate(8deg); filter: brightness(1.5); }
+      100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+    }
+
+    /* Action Overlay Particles */
+    .action-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 110px;
+      opacity: 0;
+      z-index: 30;
+    }
+    .action-active {
+      animation: actionFly 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes actionFly {
+      0% { opacity: 0; transform: scale(0.2) rotate(-45deg); }
+      50% { opacity: 1; transform: scale(1.4) rotate(15deg); }
+      100% { opacity: 0; transform: scale(1) rotate(0deg) translateY(-40px); }
+    }
+
+    /* Glassmorphism Card Style */
+    .glass-panel {
+      background: rgba(18, 18, 37, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Speech Bubble Triangle */
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 12px 12px 0;
+      border-style: solid;
+      border-color: #1f2937 transparent;
+      display: block;
+      width: 0;
+    }
+
+    /* Dizzy Stars Rotation */
+    .dizzy-star {
+      position: absolute;
+      font-size: 24px;
+      animation: orbit 2s linear infinite;
+    }
+    @keyframes orbit {
+      from { transform: rotate(0deg) translateX(70px) rotate(0deg); }
+      to { transform: rotate(360deg) translateX(70px) rotate(-360deg); }
+    }
+  </style>
+</head>
+<body class="theme-cyberpunk text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-500 overflow-x-hidden select-none">
+
+  <header class="w-full max-w-5xl mx-auto p-4 flex flex-wrap justify-between items-center gap-4 border-b border-white/10 z-20">
+    <div class="flex items-center space-x-3">
+      <div class="p-2.5 bg-gradient-to-tr from-pink-600 to-purple-600 rounded-xl shadow-lg shadow-pink-500/30">
+        <span class="text-2xl">🔥</span>
+      </div>
+      <div>
+        <h1 class="text-2xl font-black tracking-wider bg-gradient-to-r from-pink-500 via-red-400 to-yellow-300 bg-clip-text text-transparent">
+          BOSS BURN-OUT ARENA
+        </h1>
+        <p class="text-xs text-slate-400 font-medium">Ultimate Workplace Stress Relief & Catharsis Station</p>
+      </div>
+    </div>
+
+    <!-- Header Controls (Sound + Theme Selector) -->
+    <div class="flex items-center gap-3">
+      <!-- Sound Mute Toggle -->
+      <button id="soundBtn" onclick="toggleSound()" class="px-3.5 py-2 glass-panel hover:bg-white/10 rounded-xl text-xs font-semibold flex items-center gap-2 border border-white/10 transition-all">
+        <span id="soundIcon">🔊</span>
+        <span id="soundText">Audio: ON</span>
+      </button>
+
+      <!-- Theme Switcher Dropdown -->
+      <select id="themeSelect" onchange="changeTheme(this.value)" class="glass-panel text-slate-200 px-3 py-2 rounded-xl text-xs font-semibold border border-white/10 focus:outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer">
+        <option value="theme-cyberpunk" class="bg-slate-900 text-white">🌆 Cyberpunk Neon</option>
+        <option value="theme-arcade" class="bg-slate-900 text-white">🕹️ Retro Arcade</option>
+        <option value="theme-mayhem" class="bg-slate-900 text-white">💥 Office Mayhem</option>
+        <option value="theme-sunset" class="bg-slate-900 text-white">🌅 Sunset Revenge</option>
+      </select>
+    </div>
+  </header>
+
+  <main id="mainContainer" class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+
+    <!-- LEFT COLUMN: Boss Arena (Avatar, Speech Bubble, Health Bar) -->
+    <div class="lg:col-span-7 flex flex-col items-center justify-center relative">
+
+      <!-- Dynamic Floating Speech Bubble -->
+      <div id="speechBubble" class="speech-bubble relative mb-6 px-6 py-3.5 bg-slate-800/90 text-white rounded-2xl border-2 border-pink-500/50 shadow-2xl shadow-pink-500/20 text-center font-bold text-base md:text-lg max-w-md w-full transition-all transform scale-100">
+        <span id="dialogueText" class="bg-gradient-to-r from-yellow-200 to-pink-300 bg-clip-text text-transparent">
+          "বসের ওপর যত রাগ আছে ঝাড়ো! Click any attack below!"
+        </span>
+      </div>
+
+      <!-- Boss Boss Stage Area -->
+      <div class="relative w-72 h-72 md:w-80 md:h-80 flex items-center justify-center">
+
+        <!-- Dizzy Stars (Visible when Boss Health is Low) -->
+        <div id="dizzyContainer" class="hidden inset-0 pointer-events-none z-20">
+          <span class="dizzy-star" style="animation-delay: 0s;">💫</span>
+          <span class="dizzy-star" style="animation-delay: 0.6s;">⭐</span>
+          <span class="dizzy-star" style="animation-delay: 1.2s;">💫</span>
+        </div>
+
+        <!-- Boss Image Frame -->
+        <div id="bossFrame" class="relative w-64 h-64 md:w-72 md:h-72 rounded-full p-2 bg-gradient-to-b from-pink-500 via-purple-600 to-indigo-600 shadow-2xl shadow-pink-500/30 transition-transform">
+          <div class="w-full h-full rounded-full overflow-hidden bg-slate-950 relative">
+            
+            <!-- Boss Image Asset -->
+            <img id="bossImg" src="boss.jpg" onerror="this.src='https://placehold.co/400x400/1e1e38/e94560?text=ANGRY+BOSS'" alt="Boss Avatar" class="w-full h-full object-cover rounded-full transition-all duration-100">
+            
+            <!-- Red Bruise Hit Overlay -->
+            <div id="bruiseOverlay" class="absolute inset-0 bg-red-600/0 pointer-events-none transition-colors duration-150 rounded-full"></div>
+            
+            <!-- K.O. Stamp Overlay -->
+            <div id="koOverlay" class="absolute inset-0 bg-black/60 hidden flex-col items-center justify-center z-20 rounded-full animate-bounce-short">
+              <span class="text-5xl md:text-6xl font-black text-red-500 tracking-widest drop-shadow-lg transform -rotate-12">K.O.!</span>
+              <span class="text-xs text-yellow-300 font-bold mt-1">RESIGNATION ACCEPTED</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action VFX Overlay Element -->
+        <div id="actionVfx" class="action-overlay">🦶</div>
+      </div>
+
+      <!-- Boss Rage / Health Bar -->
+      <div class="w-full max-w-md mt-6 glass-panel p-4 rounded-2xl border border-white/10 shadow-xl">
+        <div class="flex justify-between items-center text-xs font-bold mb-1.5">
+          <span class="text-pink-400 tracking-wider">BOSS PATIENCE / HEALTH</span>
+          <span id="hpText" class="text-yellow-400">100 / 100 HP</span>
+        </div>
+        <div class="w-full h-4 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/10">
+          <div id="hpBar" class="h-full bg-gradient-to-r from-green-500 via-yellow-400 to-pink-600 rounded-full transition-all duration-300 w-full shadow-lg"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Weapons Arsenal, Custom Avatar Upload, Stats & Combos -->
+    <div class="lg:col-span-5 flex flex-col gap-5">
+
+      <!-- Weapons Grid -->
+      <div class="glass-panel p-5 rounded-2xl border border-white/10 shadow-2xl">
+        <h2 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+          <span>⚔️</span> SELECT YOUR REVENGE ATTACK
+        </h2>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          
+          <!-- Kick Attack -->
+          <button onclick="executeAttack('kick')" class="group relative glass-panel hover:bg-pink-600/20 border border-pink-500/30 hover:border-pink-500 p-3.5 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 shadow-lg">
+            <span class="text-3xl group-hover:scale-125 transition-transform">🦶</span>
+            <span class="text-xs font-bold text-slate-200">KICK</span>
+            <span class="text-[10px] text-pink-400 font-semibold">+15 Dmg</span>
+          </button>
+
+          <!-- Punch Attack -->
+          <button onclick="executeAttack('punch')" class="group relative glass-panel hover:bg-red-600/20 border border-red-500/30 hover:border-red-500 p-3.5 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 shadow-lg">
+            <span class="text-3xl group-hover:scale-125 transition-transform">🥊</span>
+            <span class="text-xs font-bold text-slate-200">PUNCH</span>
+            <span class="text-[10px] text-red-400 font-semibold">+12 Dmg</span>
+          </button>
+
+          <!-- Jharu / Broom Attack -->
+          <button onclick="executeAttack('jharu')" class="group relative glass-panel hover:bg-yellow-600/20 border border-yellow-500/30 hover:border-yellow-500 p-3.5 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 shadow-lg">
+            <span class="text-3xl group-hover:scale-125 transition-transform">🧹</span>
+            <span class="text-xs font-bold text-slate-200">ঝাড়ু / BROOM</span>
+            <span class="text-[10px] text-yellow-400 font-semibold">+20 Dmg</span>
+          </button>
+
+          <!-- Coffee Splash -->
+          <button onclick="executeAttack('coffee')" class="group relative glass-panel hover:bg-amber-600/20 border border-amber-500/30 hover:border-amber-500 p-3.5 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 shadow-lg">
+            <span class="text-3xl group-hover:scale-125 transition-transform">☕</span>
+            <span class="text-xs font-bold text-slate-200">HOT COFFEE</span>
+            <span class="text-[10px] text-amber-400 font-semibold">+18 Dmg</span>
+          </button>
+
+          <!-- Resignation Bomb -->
+          <button onclick="executeAttack('file')" class="group relative glass-panel hover:bg-blue-600/20 border border-blue-500/30 hover:border-blue-500 p-3.5 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 shadow-lg">
+            <span class="text-3xl group-hover:scale-125 transition-transform">💼</span>
+            <span class="text-xs font-bold text-slate-200">FILE BOMB</span>
+            <span class="text-[10px] text-blue-400 font-semibold">+25 Dmg</span>
+          </button>
+
+          <!-- Electric Shock Zap -->
+          <button onclick="executeAttack('zap')" class="group relative glass-panel hover:bg-purple-600/20 border border-purple-500/30 hover:border-purple-500 p-3.5 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-all transform active:scale-95 shadow-lg">
+            <span class="text-3xl group-hover:scale-125 transition-transform">⚡</span>
+            <span class="text-xs font-bold text-slate-200">ELECTRIC ZAP</span>
+            <span class="text-[10px] text-purple-400 font-semibold">+30 Dmg</span>
+          </button>
+
+        </div>
+
+        <!-- Ultimate Overtime Combo Button -->
+        <button onclick="triggerUltimateCombo()" class="w-full mt-4 py-3 bg-gradient-to-r from-pink-600 via-red-500 to-yellow-500 hover:from-pink-500 hover:to-yellow-400 text-white font-black text-sm tracking-widest rounded-xl shadow-lg shadow-pink-500/30 transition-all transform active:scale-98 flex items-center justify-center gap-2 border border-white/20">
+          <span>🚀</span> UNLEASH OVERTIME COMBO (ULTIMATE)
+        </button>
+      </div>
+
+      <!-- Custom Boss Photo Upload Box -->
+      <div class="glass-panel p-4 rounded-2xl border border-white/10 flex items-center justify-between gap-4">
+        <div>
+          <h3 class="text-xs font-bold text-slate-200">CHANGE BOSS PICTURE</h3>
+          <p class="text-[11px] text-slate-400">Upload your real boss picture easily!</p>
+        </div>
+        <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-pink-400 border border-pink-500/40 rounded-xl text-xs font-bold cursor-pointer transition-colors shadow flex items-center gap-2">
+          <span>📸</span> Upload Image
+          <input type="file" id="bossUpload" accept="image/*" onchange="uploadCustomBoss(event)" class="hidden">
+        </label>
+      </div>
+
+      <!-- Stats & Rank Badge Panel -->
+      <div class="glass-panel p-4 rounded-2xl border border-white/10 flex justify-between items-center">
+        <div>
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">YOUR CATHARSIS RANK</div>
+          <div id="playerRank" class="text-sm font-black text-yellow-400">Junior Complainer</div>
+        </div>
+        <div class="text-right">
+          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">TOTAL HITS DELIVERED</div>
+          <div id="hitCount" class="text-xl font-black text-pink-500">0</div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    /* ======================================================
+       1. WEB AUDIO API SYNTHESIZER (No External Sound Files Needed)
+       ====================================================== */
+    let soundEnabled = true;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      initAudio();
+
+      const now = audioCtx.currentTime;
+
+      if (type === 'kick' || type === 'punch') {
+        // Low frequency thud / punch sound
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 0.25);
+        gain.gain.setValueAtTime(1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } 
+      else if (type === 'jharu') {
+        // Fast noise swoosh / slap sound
+        const bufferSize = audioCtx.sampleRate * 0.15;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.8, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        noise.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start(now);
+      } 
+      else if (type === 'coffee') {
+        // Sizzle / liquid splash pitch sweep
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.linearRampToValueAtTime(200, now + 0.3);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } 
+      else if (type === 'file') {
+        // Paper rustle double tap
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.setValueAtTime(100, now + 0.1);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } 
+      else if (type === 'zap') {
+        // Electric zap frequency modulation
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.35);
+        gain.gain.setValueAtTime(0.7, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+      else if (type === 'ko') {
+        // Victory fanfare / explosion synth
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.6);
+        gain.gain.setValueAtTime(1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.6);
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundIcon').innerText = soundEnabled ? '🔊' : '🔇';
+      document.getElementById('soundText').innerText = soundEnabled ? 'Audio: ON' : 'Audio: OFF';
+    }
+
+    /* ======================================================
+       2. GAME STATE & DIALOGUES (Bengali + English Mix)
+       ====================================================== */
+    let bossHp = 100;
+    let totalHits = 0;
+
+    const attackData = {
+      kick: { icon: '🦶', damage: 15 },
+      punch: { icon: '🥊', damage: 12 },
+      jharu: { icon: '🧹', damage: 20 },
+      coffee: { icon: '☕', damage: 18 },
+      file: { icon: '💼', damage: 25 },
+      zap: { icon: '⚡', damage: 30 }
+    };
+
+    const funnyDialogues = [
+      "Right now, pack your bags & get out! 🚪",
+      "Give me my salary & overtime bonus FIRST! 💰",
+      "No more 10 PM weekend WhatsApp messages! 📱🚫",
+      "Go to office on Sunday yourself! 😤",
+      "My resignation letter is on your forehead! 📜💥",
+      "Micromanage this kick! 🦶🔥",
+      "Who is late now, huh?! ⏱️😎",
+      "PDF preview: I QUIT! 👋✨",
+      "একদম চুপ! আর একটা ফালতু ডেডলাইন দিবা না! 🤫",
+      "অফিস শেষ মানে শেষ, ফোন ধরা বন্ধ! 📵",
+      "আমার প্রমোশন কই? উত্তর দাও! 📈🔥",
+      "আজকে আমি বস, তুমি ক্যান্ডিডেট! 👑"
+    ];
+
+    const ranks = [
+      { hits: 0, title: "Junior Complainer" },
+      { hits: 5, title: "Overtime Fighter" },
+      { hits: 15, title: "Senior Resignation Specialist" },
+      { hits: 30, title: "Grand Master of Office Revenge" },
+      { hits: 50, title: "CEO of Catharsis 👑" }
+    ];
+
+    /* ======================================================
+       3. ATTACK EXECUTION & ANIMATIONS
+       ====================================================== */
+    function executeAttack(type) {
+      initAudio();
+      const config = attackData[type];
+      if (!config) return;
+
+      // 1. Update Hit Counter & Rank
+      totalHits++;
+      document.getElementById('hitCount').innerText = totalHits;
+      updateRank();
+
+      // 2. Reduce Boss HP
+      bossHp = Math.max(0, bossHp - config.damage);
+      updateHpBar();
+
+      // 3. Audio FX
+      playSound(type);
+
+      // 4. Trigger VFX Overlay
+      const vfx = document.getElementById('actionVfx');
+      vfx.innerText = config.icon;
+      vfx.classList.remove('action-active');
+      void vfx.offsetWidth; // Force Reflow
+      vfx.classList.add('action-active');
+
+      // 5. Boss Avatar Hit Recoil
+      const bossFrame = document.getElementById('bossFrame');
+      bossFrame.classList.remove('hit-recoil');
+      void bossFrame.offsetWidth;
+      bossFrame.classList.add('hit-recoil');
+
+      // 6. Screen Shake
+      const mainContainer = document.getElementById('mainContainer');
+      mainContainer.classList.remove('screen-shake');
+      void mainContainer.offsetWidth;
+      mainContainer.classList.add('screen-shake');
+
+      // 7. Red Bruise Flash
+      const bruise = document.getElementById('bruiseOverlay');
+      bruise.style.backgroundColor = 'rgba(239, 68, 68, 0.4)';
+      setTimeout(() => {
+        bruise.style.backgroundColor = 'rgba(239, 68, 68, 0)';
+      }, 150);
+
+      // 8. Update Random Dialogue
+      const randomMsg = funnyDialogues[Math.floor(Math.random() * funnyDialogues.length)];
+      const dialogueText = document.getElementById('dialogueText');
+      dialogueText.innerText = `"${randomMsg}"`;
+
+      // 9. Check K.O. State
+      if (bossHp === 0) {
+        triggerKO();
+      }
+    }
+
+    function updateHpBar() {
+      const hpBar = document.getElementById('hpBar');
+      const hpText = document.getElementById('hpText');
+      
+      hpBar.style.width = `${bossHp}%`;
+      hpText.innerText = `${bossHp} / 100 HP`;
+
+      // Show dizzy stars when boss HP is below 40%
+      const dizzy = document.getElementById('dizzyContainer');
+      if (bossHp <= 40 && bossHp > 0) {
+        dizzy.classList.remove('hidden');
+        dizzy.classList.add('flex');
+      } else {
+        dizzy.classList.add('hidden');
+        dizzy.classList.remove('flex');
+      }
+    }
+
+    function updateRank() {
+      let currentRank = ranks[0].title;
+      for (let r of ranks) {
+        if (totalHits >= r.hits) {
+          currentRank = r.title;
+        }
+      }
+      document.getElementById('playerRank').innerText = currentRank;
+    }
+
+    function triggerKO() {
+      playSound('ko');
+      document.getElementById('koOverlay').classList.remove('hidden');
+      document.getElementById('koOverlay').classList.add('flex');
+      document.getElementById('dialogueText').innerText = '"K.O.! RESIGNATION GRANTED! YOU WIN! 🎉"';
+
+      // Confetti Explosion
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+
+      // Reset Boss HP after 3 seconds for infinite play
+      setTimeout(() => {
+        bossHp = 100;
+        updateHpBar();
+        document.getElementById('koOverlay').classList.add('hidden');
+        document.getElementById('koOverlay').classList.remove('flex');
+      }, 3500);
+    }
+
+    /* ======================================================
+       4. ULTIMATE COMBO & CUSTOM IMAGE UPLOAD
+       ====================================================== */
+    function triggerUltimateCombo() {
+      let comboAttacks = ['kick', 'punch', 'jharu', 'coffee', 'file', 'zap'];
+      let delay = 0;
+
+      comboAttacks.forEach((att, index) => {
+        setTimeout(() => {
+          executeAttack(att);
+        }, delay);
+        delay += 180;
+      });
+    }
+
+    function uploadCustomBoss(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('bossImg').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function changeTheme(themeName) {
+      document.body.className = `${themeName} text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-500 overflow-x-hidden select-none`;
+    }
+  </script>
+</body>
+</html>
